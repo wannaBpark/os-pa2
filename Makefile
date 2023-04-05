@@ -1,6 +1,6 @@
 TARGET	= sched
 CFLAGS	= -g -c -D_POSIX_C_SOURCE
-CFLAGS += -std=c99 -Wimplicit-function-declaration -Werror
+CFLAGS += -std=c99 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Werror
 CFLAGS += # Add your own cflags here if necessary
 LDFLAGS	=
 

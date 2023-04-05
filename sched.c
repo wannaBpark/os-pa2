@@ -53,9 +53,9 @@ struct resource resources[NR_RESOURCES];
  * Following code is to maintain the simulator itself.
  */
 struct resource_schedule {
-	int resource_id;
-	int at;
-	int duration;
+	unsigned int resource_id;
+	unsigned int at;
+	unsigned int duration;
 	struct list_head list;
 };
 
@@ -126,7 +126,7 @@ void dump_status(void)
 #define __print_event(pid, string, args...)   \
 	do {                                      \
 		fprintf(stderr, "%3d: ", ticks);      \
-		for (int i = 0; i < pid; i++) {       \
+		for (unsigned int i = 0; i < pid; i++) {       \
 			fprintf(stderr, "    ");          \
 		}                                     \
 		fprintf(stderr, string "\n", ##args); \
@@ -183,7 +183,6 @@ static int __load_script(char *const filename)
 			continue;
 		} else if (strmatch(tokens[0], "end")) {
 			/* End of process description */
-			struct resource_schedule *rs;
 			assert(p);
 
 			list_add_tail(&p->list, &__forkqueue);
@@ -209,9 +208,11 @@ static int __load_script(char *const filename)
 
 			rs = malloc(sizeof(*rs));
 
-			rs->resource_id = atoi(tokens[1]);
-			rs->at = atoi(tokens[2]);
-			rs->duration = atoi(tokens[3]);
+			*rs = (struct resource_schedule) {
+				.resource_id = atoi(tokens[1]),
+				.at = atoi(tokens[2]),
+				.duration = atoi(tokens[3]),
+			};
 
 			list_add_tail(&rs->list, &p->__resources_to_acquire);
 		} else {

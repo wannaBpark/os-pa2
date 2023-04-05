@@ -21,7 +21,7 @@ struct list_head;
 enum process_status {
 	PROCESS_READY,		/* Process is ready to run */
 	PROCESS_RUNNING,	/* The process is now running */
-	PROCESS_WAIT,		/* The process is waiting for some resource */
+	PROCESS_BLOCKED,		/* The process is waiting for some resource */
 	PROCESS_EXIT,		/* The process is exited */
 };
 

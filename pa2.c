@@ -56,7 +56,7 @@ extern bool quiet;
  *   The current implementation serves the resource in the requesting order
  *   without considering the priority. See the comments in sched.h
  ***********************************************************************/
-bool fcfs_acquire(int resource_id)
+static bool fcfs_acquire(int resource_id)
 {
 	struct resource *r = resources + resource_id;
 
@@ -91,7 +91,7 @@ bool fcfs_acquire(int resource_id)
  *   The current implementation serves the resource in the requesting order
  *   without considering the priority. See the comments in sched.h
  ***********************************************************************/
-void fcfs_release(int resource_id)
+static void fcfs_release(int resource_id)
 {
 	struct resource *r = resources + resource_id;
 
