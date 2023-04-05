@@ -148,7 +148,7 @@ static void __briefing_schedule(struct process *p)
 	       p->pid, p->__starts_at, p->lifespan, p->lifespan >= 2 ? "s" : "", p->prio);
 
 	list_for_each_entry(rs, &p->__resources_to_acquire, list) {
-		printf("    Acquire resource %d at %d for %d\n", rs->resource_id, rs->at,
+		printf("    Acquire resource [%d] at %d for %d\n", rs->resource_id, rs->at,
 		       rs->duration);
 	}
 }
@@ -281,12 +281,13 @@ static bool __run_current_acquire()
 
 			/* Callback to acquire the resource */
 			if (!sched->acquire(rs->resource_id)) {
+				__print_event(current->pid, "=[%d]", rs->resource_id);
 				return false;
 			}
 
 			list_move_tail(&rs->list, &current->__resources_holding);
 
-			__print_event(current->pid, "+%d", rs->resource_id);
+			__print_event(current->pid, "+[%d]", rs->resource_id);
 		}
 	}
 
@@ -309,7 +310,7 @@ static void __run_current_release()
 		/* Callback the release() */
 		sched->release(rs->resource_id);
 
-		__print_event(current->pid, "-%d", rs->resource_id);
+		__print_event(current->pid, "-[%d]", rs->resource_id);
 
 		list_del(&rs->list);
 		free(rs);
@@ -376,11 +377,9 @@ static void __do_simulation(void)
 			} else {
 				/**
 				 * The current is blocked while acquiring resource(s).
-				 * In this case, @current could not make a progress in this tick
+				 * In this case, @current could not make a progress in this tick.
+				 * Thus, it does not get aged nor is unable to perform releases
 				 */
-				__print_event(current->pid, "=");
-
-				/* Thus, it does not get aged nor is unable to perform releases */
 			}
 		}
 
