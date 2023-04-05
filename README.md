@@ -107,10 +107,10 @@ We have learned various process scheduling policies and examined their propertie
 - Document: One PDF document (50 pts) including;
   - Description how **each** scheduling policy is implemented
     - Do not explain the code itself. Instead, focus on explaining your idea and approach.
-  - Show how the priorities of processes are changed over time for PA and PIP.
-    - Use `prio` testcase for PA scheduler, and `resources-adv2` for PIP.
-    - Explain the change during the first 12 ticks.
-    - DO NOT copy-paste the output of this program.
+  - Show how the priority of the processes are changed over time for PIP.
+    - Use `resources-adv2` for the explanation.
+    - Explain the change for the first 12 ticks. **Must present the priority of each process on every tick.**
+    - DO NOT copy-paste the output of a program.
   - Lesson learned
     - No need to recite what is explained in the class.
   - No more than **five** pages
