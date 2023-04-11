@@ -65,7 +65,7 @@ We have learned various process scheduling policies and examined their propertie
 
 - FCFS and SJF are supposed to be non-preemptive; even the simulator may ask the scheduler to select next process to run at every tick, the scheduler should not change currently running process unless it is completed. STCF scheduler can preempt the currently running process when a process with a higher priority arrives, but should keep the current process otherwise.
 
-- For round-robin scheduler, the time quantum coincides with the tick; when the framework calls `schedule()`, it implies the time quantum is expired. If two processes are with the same priority, they should be run for one tick by turn.
+- For round-robin scheduler, the time quantum coincides with the tick; when the framework calls `schedule()`, it implies the time quantum is expired. You may ignore the priority while implementing the RR scheduler.
 
 - The priority-based schedulers should handle processes with the same priority in the round-robin way; If two or more processes are with the same priority, they should be swiched on each tick.
 
