@@ -258,10 +258,6 @@ static struct process* stcf_schedule(void)
 	struct process* tmp = NULL;
 	struct process* next = NULL;
 	size_t cur_tc;
-	//size_t cur_age = current->age;
-
-	/* You may inspect the situation by calling dump_status() at any time */
-	//dump_status();
 
 	if (!current || current->status == PROCESS_BLOCKED) {
 		cur_tc = MAX_TC;
@@ -313,6 +309,32 @@ struct scheduler stcf_scheduler = {
 	/* Obviously, you should implement stcf_schedule() and attach it here */
 };
 
+static struct process* rr_schedule(void)
+{
+	const size_t MAX_TC = 1e8;
+	struct process* pos = NULL;
+	struct process* tmp = NULL;
+	struct process* next = NULL;
+	size_t cur_tc;
+
+	if (!current || current->status == PROCESS_BLOCKED) {
+		cur_tc = MAX_TC;
+		goto pick_next;
+	}
+	if (list_empty(&readyqueue) && current->lifespan > current->age) {
+		return current;
+	}
+pick_next:
+	if (!list_empty(&readyqueue)) {
+		next = list_first_entry(&readyqueue, struct process, list);
+		list_del_init(&next->list);
+		if (current && current->lifespan > current->age) {
+			list_add_tail(&current->list, &readyqueue);
+		}
+	}
+	return next;
+}
+
 /***********************************************************************
  * Round-robin scheduler
  ***********************************************************************/
@@ -320,7 +342,7 @@ struct scheduler rr_scheduler = {
 	.name = "Round-Robin",
 	.acquire = fcfs_acquire, /* Use the default FCFS acquire() */
 	.release = fcfs_release, /* Use the default FCFS release() */
-
+	.schedule = rr_schedule,
 	/* Obviously, ... */
 };
 
