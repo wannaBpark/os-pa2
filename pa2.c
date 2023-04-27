@@ -253,43 +253,48 @@ struct scheduler sjf_scheduler = {
 
 static struct process* stcf_schedule(void)
 {
+	const size_t MAX_TC = 1e8;
 	struct process* pos = NULL;
 	struct process* tmp = NULL;
 	struct process* next = NULL;
-	size_t min_lifespan = 1e9;
-	size_t cur_age = current->age;
+	size_t cur_tc;
+	//size_t cur_age = current->age;
 
 	/* You may inspect the situation by calling dump_status() at any time */
-	// dump_status();
+	//dump_status();
 
 	if (!current || current->status == PROCESS_BLOCKED) {
+		cur_tc = MAX_TC;
 		goto pick_next;
 	}
-
-	/* The current process has remaining lifetime. Schedule it again */
-	/*if (current->age < current->lifespan) {
+	if (list_empty(&readyqueue) && current->lifespan > current->age) {
 		return current;
-	}*/
+	}
+	cur_tc = (current->lifespan <= current->age) ? MAX_TC : current->lifespan - current->age;
 
 pick_next:
 	/* Let's pick a new process to run next */
-
 	if (!list_empty(&readyqueue)) {
 		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
-			if (pos->lifespan < min_lifespan) {
+			size_t pos_tc = pos->lifespan - pos->age;
+			if (pos_tc < cur_tc) {
 				next = pos;
-				min_lifespan = next->lifespan;
+				cur_tc = pos_tc;
 			}
+		//	printf("post_Tc : %ld cur_Tc : %ld\n", pos_tc, cur_tc);
 		}
-		if (!(current->lifespan > next->lifespan)) {
-			next = current;
-			goto RET_STCF;
+		// no need to change : next == current
+		// left : couldn't find more shorter jobs (return current)
+		// right: current == null(adding new schedule) (return next)
+		if (next == NULL) { // Couldn't found shorter Time Completion
+			return current;
+		} else if (current && current->lifespan > current->age && next != NULL) {
+			list_add_tail(&current->list, &readyqueue);
 		}
+		
 		list_del_init(&next->list);
+		
 	}
-
-RET_STCF:
-	/* Return the process to run next */
 	return next;
 }
 
