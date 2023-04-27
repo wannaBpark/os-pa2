@@ -250,6 +250,49 @@ struct scheduler sjf_scheduler = {
 								   SJF in the simulation system */
 };
 
+
+static struct process* stcf_schedule(void)
+{
+	struct process* pos = NULL;
+	struct process* tmp = NULL;
+	struct process* next = NULL;
+	size_t min_lifespan = 1e9;
+	size_t cur_age = current->age;
+
+	/* You may inspect the situation by calling dump_status() at any time */
+	// dump_status();
+
+	if (!current || current->status == PROCESS_BLOCKED) {
+		goto pick_next;
+	}
+
+	/* The current process has remaining lifetime. Schedule it again */
+	/*if (current->age < current->lifespan) {
+		return current;
+	}*/
+
+pick_next:
+	/* Let's pick a new process to run next */
+
+	if (!list_empty(&readyqueue)) {
+		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
+			if (pos->lifespan < min_lifespan) {
+				next = pos;
+				min_lifespan = next->lifespan;
+			}
+		}
+		if (!(current->lifespan > next->lifespan)) {
+			next = current;
+			goto RET_STCF;
+		}
+		list_del_init(&next->list);
+	}
+
+RET_STCF:
+	/* Return the process to run next */
+	return next;
+}
+
 /***********************************************************************
  * STCF scheduler
  ***********************************************************************/
@@ -257,12 +300,9 @@ struct scheduler stcf_scheduler = {
 	.name = "Shortest Time-to-Complete First",
 	.acquire = fcfs_acquire, /* Use the default FCFS acquire() */
 	.release = fcfs_release, /* Use the default FCFS release() */
-
+	.schedule = stcf_schedule,
 	/* You need to check the newly created processes to implement STCF.
-	 * Have a look at @
-	 
-	 
-	 ked() callback.
+	 * Have a look at @forked() callback.
 	 */
 
 	/* Obviously, you should implement stcf_schedule() and attach it here */
