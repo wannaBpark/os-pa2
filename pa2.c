@@ -311,14 +311,9 @@ struct scheduler stcf_scheduler = {
 
 static struct process* rr_schedule(void)
 {
-	const size_t MAX_TC = 1e8;
-	struct process* pos = NULL;
-	struct process* tmp = NULL;
 	struct process* next = NULL;
-	size_t cur_tc;
 
 	if (!current || current->status == PROCESS_BLOCKED) {
-		cur_tc = MAX_TC;
 		goto pick_next;
 	}
 	if (list_empty(&readyqueue) && current->lifespan > current->age) {
