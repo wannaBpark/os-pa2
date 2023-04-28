@@ -454,6 +454,7 @@ pick_next:
 	if (!list_empty(&readyqueue)) {
 		next = list_first_entry(&readyqueue, struct process, list);
 		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
+			++pos->prio;
 			if (pos->prio > next->prio) {
 				next = pos;
 			}
@@ -470,6 +471,7 @@ pick_next:
 				list_add_tail(&current->list, &readyqueue);
 			}
 		}
+		next->prio = next->prio_orig;
 		list_del_init(&next->list);
 
 	}
