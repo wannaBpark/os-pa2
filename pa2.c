@@ -367,7 +367,7 @@ static void prio_release(int resource_id)
 
 	r->owner = NULL;
 	if (!list_empty(&r->waitqueue)) {
-		waiter =list_first_entry(&r->waitqueue, struct process, list);
+		waiter = list_first_entry(&r->waitqueue, struct process, list);
 
 		list_for_each_entry_safe(pos, tmp, &r->waitqueue, list) {
 			if (pos->prio > waiter->prio) {
@@ -376,6 +376,9 @@ static void prio_release(int resource_id)
 				waiter = pos;
 			}
 			//printf("post_Tc : %ld cur_Tc : %ld\n", pos_tc, cur_tc);
+		}
+		if (waiter == current) {
+			return;
 		}
 		assert(waiter->status == PROCESS_BLOCKED);
 		list_del_init(&waiter->list);
@@ -390,8 +393,8 @@ static struct process* prio_schedule(void)
 	struct process* next = NULL;
 	struct process* pos = NULL;
 	struct process* tmp = NULL;
-	struct process* next = NULL;
 
+	//dump_status();
 	if (!current || current->status == PROCESS_BLOCKED) {
 		goto pick_next;
 	}
@@ -400,21 +403,38 @@ static struct process* prio_schedule(void)
 	}
 pick_next:
 	if (!list_empty(&readyqueue)) {
+		//next = list_first_entry(&readyqueue, struct process, list);
+		//next = current;
 		next = list_first_entry(&readyqueue, struct process, list);
-
+		//next = list_first_entry(&readyqueue, structprocess, list) : current;
 		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
-			size_t pos_tc = pos->lifespan - pos->age;
-			if (pos->prio <= next->prio) {
+			
+			if (pos->prio > next->prio) {
 				next = pos;
-			} else if (pos->prio == next->prio) {
+			} /*else if (pos->prio == next->prio) {
 				next = pos;
-			}
+			}*/
 		}
 		
-		if (current && current->lifespan > current->age && next != NULL) {
-			list_add_tail(&current->list, &readyqueue);
+		// We couldn't find more prioiry process T.T
+		if (!current) {
+			//list_del_init(&next->list);
+			//return next;
+		} else if (current->prio > next->prio && current->lifespan > current->age) {
+			return current;
+		} else if (current->prio == next->prio) {
+			if (current->lifespan > current->age) {
+				list_add_tail(&current->list, &readyqueue);
+			}
 		}
-RET:
+
+		// If we could found more priority process 
+		// code below...
+
+		/*if (current && current->lifespan > current->age && current != next) {
+			list_add_tail(&current->list, &readyqueue);
+		}*/
+//RET:
 		list_del_init(&next->list);
 
 	}
@@ -443,7 +463,7 @@ struct scheduler pa_scheduler = {
 	.name = "Priority + aging",
 	.acquire = prio_acquire,
 	.release = prio_release,
-	.schedule = pa_schedule,
+	//.schedule = pa_schedule,
 	/**
 	 * Ditto
 	 */
@@ -456,7 +476,7 @@ struct scheduler pcp_scheduler = {
 	.name = "Priority + PCP Protocol",
 	.acquire = prio_acquire,
 	.release = prio_release,
-	.schedule = pcp_schedule,
+	//.schedule = pcp_schedule,
 	/**
 	 * Ditto
 	 */
@@ -469,7 +489,7 @@ struct scheduler pip_scheduler = {
 	.name = "Priority + PIP Protocol",
 	.acquire = prio_acquire,
 	.release = prio_release,
-	.schedule = pip_schedule,
+	//.schedule = pip_schedule,
 	/**
 	 * Ditto
 	 */
