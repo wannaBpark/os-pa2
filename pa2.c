@@ -47,7 +47,6 @@ extern unsigned int ticks;
  */
 extern bool quiet;
 
-static bool isPCP;
 /***********************************************************************
  * Default FCFS resource acquision function
  *
@@ -569,8 +568,7 @@ pick_next:
 			}
 		}
 
-		current->prio = current->prio_orig;
-		next->prio = next->prio_orig;
+		//next->prio = next->prio_orig;
 		list_del_init(&next->list);
 
 	}
@@ -582,8 +580,8 @@ pick_next:
  ***********************************************************************/
 struct scheduler pcp_scheduler = {
 	.name = "Priority + PCP Protocol",
-	.acquire = prio_acquire,
-	.release = prio_release,
+	.acquire = pcp_acquire,
+	.release = pcp_release,
 	.schedule = pcp_schedule,
 	/**
 	 * Ditto
