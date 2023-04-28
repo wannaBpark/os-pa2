@@ -388,6 +388,9 @@ static void prio_release(int resource_id)
 static struct process* prio_schedule(void)
 {
 	struct process* next = NULL;
+	struct process* pos = NULL;
+	struct process* tmp = NULL;
+	struct process* next = NULL;
 
 	if (!current || current->status == PROCESS_BLOCKED) {
 		goto pick_next;
@@ -398,10 +401,22 @@ static struct process* prio_schedule(void)
 pick_next:
 	if (!list_empty(&readyqueue)) {
 		next = list_first_entry(&readyqueue, struct process, list);
-		list_del_init(&next->list);
-		if (current && current->lifespan > current->age) {
+
+		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
+			size_t pos_tc = pos->lifespan - pos->age;
+			if (pos->prio <= next->prio) {
+				next = pos;
+			} else if (pos->prio == next->prio) {
+				next = pos;
+			}
+		}
+		
+		if (current && current->lifespan > current->age && next != NULL) {
 			list_add_tail(&current->list, &readyqueue);
 		}
+RET:
+		list_del_init(&next->list);
+
 	}
 	return next;
 }
