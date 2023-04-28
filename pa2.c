@@ -365,34 +365,34 @@ static void prio_release(int resource_id)
 
 	assert(r->owner == current);
 
-	//r->owner = NULL;
+	r->owner = NULL;
 	if (!list_empty(&r->waitqueue)) {
 		waiter = list_first_entry(&r->waitqueue, struct process, list);
 		list_for_each_entry_safe(pos, tmp, &r->waitqueue, list) {
 			if (pos->prio > waiter->prio) {
 				waiter = pos;
-			} else if (pos->prio == waiter->prio&& pos->age < waiter->age) {
+			} /*else if (pos->prio == waiter->prio&& pos->age < waiter->age) {
 				waiter = pos;
-			}
+			}*/
 			//printf("post_Tc : %ld cur_Tc : %ld\n", pos_tc, cur_tc);
 		}
 		//no need to release!
 		//Current is already bigger than others.
-		if (current->prio > waiter->prio) {
+		/*if (current->prio > waiter->prio) {
 			return;
-		}
+		}*/
 
 		// We gotta change the OWNER of the resource!
 
-		r->owner = NULL;
+		//r->owner = NULL;
 		assert(waiter->status == PROCESS_BLOCKED);
 		list_del_init(&waiter->list);
 		waiter->status = PROCESS_READY;
 		list_add_tail(&waiter->list, &readyqueue);
 
-		if (current->lifespan > current->age) {
+		/*if (current->lifespan > current->age) {
 			list_add_tail(&current->list, &r->waitqueue);
-		}
+		}*/
 	}
 }
 
@@ -454,7 +454,7 @@ pick_next:
  ***********************************************************************/
 struct scheduler prio_scheduler = {
 	.name = "Priority",
-	.acquire = prio_acquire,
+	.acquire = fcfs_acquire,
 	.release = prio_release,
 	.schedule = prio_schedule,
 	/**
