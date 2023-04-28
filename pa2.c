@@ -365,10 +365,9 @@ static void prio_release(int resource_id)
 
 	assert(r->owner == current);
 
-	r->owner = NULL;
+	//r->owner = NULL;
 	if (!list_empty(&r->waitqueue)) {
 		waiter = list_first_entry(&r->waitqueue, struct process, list);
-
 		list_for_each_entry_safe(pos, tmp, &r->waitqueue, list) {
 			if (pos->prio > waiter->prio) {
 				waiter = pos;
@@ -377,14 +376,23 @@ static void prio_release(int resource_id)
 			}
 			//printf("post_Tc : %ld cur_Tc : %ld\n", pos_tc, cur_tc);
 		}
-		if (waiter == current) {
+		//no need to release!
+		//Current is already bigger than others.
+		if (current->prio > waiter->prio) {
 			return;
 		}
+
+		// We gotta change the OWNER of the resource!
+
+		r->owner = NULL;
 		assert(waiter->status == PROCESS_BLOCKED);
 		list_del_init(&waiter->list);
 		waiter->status = PROCESS_READY;
-		 
 		list_add_tail(&waiter->list, &readyqueue);
+
+		if (current->lifespan > current->age) {
+			list_add_tail(&current->list, &r->waitqueue);
+		}
 	}
 }
 
