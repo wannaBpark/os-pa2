@@ -47,6 +47,7 @@ extern unsigned int ticks;
  */
 extern bool quiet;
 
+static bool isPCP;
 /***********************************************************************
  * Default FCFS resource acquision function
  *
@@ -490,6 +491,92 @@ struct scheduler pa_scheduler = {
 	 */
 };
 
+static bool pcp_acquire(int resource_id)
+{
+	struct resource* r = resources + resource_id;
+
+	if (!r->owner) {
+		r->owner = current;
+		current->prio = MAX_PRIO;
+		return true;
+	}
+
+	//fprintf(stderr, "%d is approaching to %d\n", current->pid, resource_id);
+	current->status = PROCESS_BLOCKED;
+	list_add_tail(&current->list, &r->waitqueue);
+
+	return false;
+}
+
+static void pcp_release(int resource_id)
+{
+	struct resource* r = resources + resource_id;
+	struct process* pos = NULL;
+	struct process* tmp = NULL;
+	struct process* waiter;
+
+	assert(r->owner == current);
+	current->prio = current->prio_orig;
+	r->owner = NULL;
+	if (!list_empty(&r->waitqueue)) {
+		waiter = list_first_entry(&r->waitqueue, struct process, list);
+		list_for_each_entry_safe(pos, tmp, &r->waitqueue, list) {
+			if (pos->prio > waiter->prio) {
+				waiter = pos;
+			}
+		}
+		// We gotta change the OWNER of the resource!
+
+		assert(waiter->status == PROCESS_BLOCKED);
+		list_del_init(&waiter->list);
+		waiter->status = PROCESS_READY;
+		list_add_tail(&waiter->list, &readyqueue);
+	}
+}
+
+static struct process* pcp_schedule(void)
+{
+	struct process* next = NULL;
+	struct process* pos = NULL;
+	struct process* tmp = NULL;
+
+	//dump_status();
+	if (!current || current->status == PROCESS_BLOCKED) {
+		goto pick_next;
+	}
+	if (list_empty(&readyqueue) && current->lifespan > current->age) {
+		return current;
+	}
+pick_next:
+	if (!list_empty(&readyqueue)) {
+		next = list_first_entry(&readyqueue, struct process, list);
+		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
+			//pos->prio = (pos->prio == MAX_PRIO) ? pos->prio : (pos->prio + 1);
+			if (pos->prio > next->prio) {
+				next = pos;
+			}
+		}
+
+		// We couldn't find more prioiry process T.T
+		if (!current || current->status == PROCESS_BLOCKED) {
+		}
+		else if (current->prio > next->prio && current->lifespan > current->age) { // no change
+			return current;
+		}
+		else if (current->prio == next->prio || current->prio < next->prio) { // changes but if life's left, add tail to the readyqueue
+			if (current->lifespan > current->age) {
+				list_add_tail(&current->list, &readyqueue);
+			}
+		}
+
+		current->prio = current->prio_orig;
+		next->prio = next->prio_orig;
+		list_del_init(&next->list);
+
+	}
+	return next;
+
+}
 /***********************************************************************
  * Priority scheduler with priority ceiling protocol
  ***********************************************************************/
@@ -497,7 +584,7 @@ struct scheduler pcp_scheduler = {
 	.name = "Priority + PCP Protocol",
 	.acquire = prio_acquire,
 	.release = prio_release,
-	//.schedule = pcp_schedule,
+	.schedule = pcp_schedule,
 	/**
 	 * Ditto
 	 */
