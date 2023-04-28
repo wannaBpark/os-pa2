@@ -206,19 +206,15 @@ static struct process *sjf_schedule(void)
 	struct process* tmp = NULL;
 	struct process* next = NULL;
 
-	// If there is no process OR current process is Blocked, pick next
 	if (!current || current->status == PROCESS_BLOCKED) {
 		goto pick_next;
 	}
 
-	// The current process has remaining lifetime. Run it til the end
 	if (current->age < current->lifespan) {
 		return current;
 	}
 
 pick_next:
-	/* Let's pick a new process to run next */
-
 	if (!list_empty(&readyqueue)) {
 		next = list_first_entry(&readyqueue, struct process, list);
 		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
@@ -258,7 +254,6 @@ static struct process* stcf_schedule(void)
 	cur_tc = (current->lifespan <= current->age) ? MAX_TC : current->lifespan - current->age;
 
 pick_next:
-	/* Let's pick a new process to run next */
 	if (!list_empty(&readyqueue)) {
 		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
 			size_t pos_tc = pos->lifespan - pos->age;
@@ -267,7 +262,6 @@ pick_next:
 				cur_tc = pos_tc;
 			}
 		}
-
 		if (next == NULL) { // Couldn't found shorter Time Completion
 			return current;
 		} else if (current && current->lifespan > current->age && next != NULL) {
@@ -291,8 +285,6 @@ struct scheduler stcf_scheduler = {
 	/* You need to check the newly created processes to implement STCF.
 	 * Have a look at @forked() callback.
 	 */
-
-	/* Obviously, you should implement stcf_schedule() and attach it here */
 };
 
 static struct process* rr_schedule(void)
@@ -358,7 +350,6 @@ static void prio_release(int resource_id)
 				waiter = pos;
 			} 
 		}
-
 		// We gotta push WAITER -> READY QUEUE!
 		assert(waiter->status == PROCESS_BLOCKED);
 		list_del_init(&waiter->list);
@@ -373,7 +364,6 @@ static struct process* prio_schedule(void)
 	struct process* pos = NULL;
 	struct process* tmp = NULL;
 
-	//dump_status();
 	if (!current || current->status == PROCESS_BLOCKED) {
 		goto pick_next;
 	}
@@ -503,45 +493,6 @@ static void pcp_release(int resource_id)
 	}
 }
 
-/*static struct process* pcp_schedule(void)
-{
-	struct process* next = NULL;
-	struct process* pos = NULL;
-	struct process* tmp = NULL;
-
-	if (!current || current->status == PROCESS_BLOCKED) {
-		goto pick_next;
-	}
-	if (list_empty(&readyqueue) && current->lifespan > current->age) {
-		return current;
-	}
-pick_next:
-	if (!list_empty(&readyqueue)) {
-		next = list_first_entry(&readyqueue, struct process, list);
-		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
-			if (pos->prio > next->prio) {
-				next = pos;
-			}
-		}
-
-		// code below : prevent segfault by accessing if and only (current) is valid
-		if (!current || current->status == PROCESS_BLOCKED) {
-		}
-		else if (current->prio > next->prio && current->lifespan > current->age) { // no change
-			return current;
-		}
-		else if (current->prio == next->prio || current->prio < next->prio) { // changes but if life's left, add tail to the readyqueue
-			if (current->lifespan > current->age) {
-				list_add_tail(&current->list, &readyqueue);
-			}
-		}
-
-		list_del_init(&next->list);
-
-	}
-	return next;
-
-}*/
 /***********************************************************************
  * Priority scheduler with priority ceiling protocol
  ***********************************************************************/
@@ -550,9 +501,6 @@ struct scheduler pcp_scheduler = {
 	.acquire = pcp_acquire,
 	.release = pcp_release,
 	.schedule = prio_schedule,
-	/**
-	 * Ditto
-	 */
 };
 
 static bool pip_acquire(int resource_id)
@@ -597,45 +545,6 @@ static void pip_release(int resource_id)
 		list_add_tail(&waiter->list, &readyqueue);
 	}
 }
-/*
-static struct process* pip_schedule(void)
-{
-	struct process* next = NULL;
-	struct process* pos = NULL;
-	struct process* tmp = NULL;
-
-	//dump_status();
-	if (!current || current->status == PROCESS_BLOCKED) {
-		goto pick_next;
-	}
-	if (list_empty(&readyqueue) && current->lifespan > current->age) {
-		return current;
-	}
-pick_next:
-	if (!list_empty(&readyqueue)) {
-		next = list_first_entry(&readyqueue, struct process, list);
-		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
-			if (pos->prio > next->prio) {
-				next = pos;
-			}
-		}
-
-		// We couldn't find more prioiry process T.T
-		if (!current || current->status == PROCESS_BLOCKED) {
-		}
-		else if (current->prio > next->prio && current->lifespan > current->age) { // no change
-			return current;
-		}
-		else if (current->prio == next->prio || current->prio < next->prio) { // changes but if life's left, add tail to the readyqueue
-			if (current->lifespan > current->age) {
-				list_add_tail(&current->list, &readyqueue);
-			}
-		}
-		list_del_init(&next->list);
-	}
-	return next;
-
-}*/
 /***********************************************************************
  * Priority scheduler with priority inheritance protocol
  ***********************************************************************/
@@ -644,7 +553,4 @@ struct scheduler pip_scheduler = {
 	.acquire = pip_acquire,
 	.release = pip_release,
 	.schedule = prio_schedule,
-	/**
-	 * Ditto
-	 */
 };
