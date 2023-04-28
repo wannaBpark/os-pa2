@@ -341,11 +341,79 @@ struct scheduler rr_scheduler = {
 	/* Obviously, ... */
 };
 
+static bool prio_acquire(int resource_id)
+{
+	struct resource* r = resources + resource_id;
+
+	if (!r->owner) {
+		r->owner = current;
+		return true;
+	}
+	current->status = PROCESS_BLOCKED;
+
+	list_add_tail(&current->list, &r->waitqueue);
+
+	return false;
+}
+
+static void prio_release(int resource_id)
+{
+	struct resource* r = resources + resource_id;
+	struct process* pos = NULL;
+	struct process* tmp = NULL;
+	struct process* waiter;
+
+	assert(r->owner == current);
+
+	r->owner = NULL;
+	if (!list_empty(&r->waitqueue)) {
+		waiter =list_first_entry(&r->waitqueue, struct process, list);
+
+		list_for_each_entry_safe(pos, tmp, &r->waitqueue, list) {
+			if (pos->prio > waiter->prio) {
+				waiter = pos;
+			} else if (pos->prio == waiter->prio&& pos->age < waiter->age) {
+				waiter = pos;
+			}
+			//printf("post_Tc : %ld cur_Tc : %ld\n", pos_tc, cur_tc);
+		}
+		assert(waiter->status == PROCESS_BLOCKED);
+		list_del_init(&waiter->list);
+		waiter->status = PROCESS_READY;
+		 
+		list_add_tail(&waiter->list, &readyqueue);
+	}
+}
+
+static struct process* prio_schedule(void)
+{
+	struct process* next = NULL;
+
+	if (!current || current->status == PROCESS_BLOCKED) {
+		goto pick_next;
+	}
+	if (list_empty(&readyqueue) && current->lifespan > current->age) {
+		return current;
+	}
+pick_next:
+	if (!list_empty(&readyqueue)) {
+		next = list_first_entry(&readyqueue, struct process, list);
+		list_del_init(&next->list);
+		if (current && current->lifespan > current->age) {
+			list_add_tail(&current->list, &readyqueue);
+		}
+	}
+	return next;
+}
+
 /***********************************************************************
  * Priority scheduler
  ***********************************************************************/
 struct scheduler prio_scheduler = {
 	.name = "Priority",
+	.acquire = prio_acquire,
+	.release = prio_release,
+	.schedule = prio_schedule,
 	/**
 	 * Implement your own acqure/release function to make the priority
 	 * scheduler correct.
@@ -358,6 +426,9 @@ struct scheduler prio_scheduler = {
  ***********************************************************************/
 struct scheduler pa_scheduler = {
 	.name = "Priority + aging",
+	.acquire = prio_acquire,
+	.release = prio_release,
+	.schedule = pa_schedule,
 	/**
 	 * Ditto
 	 */
@@ -368,6 +439,9 @@ struct scheduler pa_scheduler = {
  ***********************************************************************/
 struct scheduler pcp_scheduler = {
 	.name = "Priority + PCP Protocol",
+	.acquire = prio_acquire,
+	.release = prio_release,
+	.schedule = pcp_schedule,
 	/**
 	 * Ditto
 	 */
@@ -378,6 +452,9 @@ struct scheduler pcp_scheduler = {
  ***********************************************************************/
 struct scheduler pip_scheduler = {
 	.name = "Priority + PIP Protocol",
+	.acquire = prio_acquire,
+	.release = prio_release,
+	.schedule = pip_schedule,
 	/**
 	 * Ditto
 	 */
