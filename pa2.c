@@ -430,7 +430,7 @@ struct scheduler prio_scheduler = {
 	.name = "Priority",
 	.acquire = prio_acquire,
 	.release = prio_release,
-	.schedule = prio_schedule,
+	.schedule = pip_schedule,
 	/**
 	 * Implement your own acqure/release function to make the priority
 	 * scheduler correct.
@@ -485,7 +485,7 @@ struct scheduler pa_scheduler = {
 	.name = "Priority + aging",
 	.acquire = prio_acquire,
 	.release = prio_release,
-	.schedule = pa_schedule,
+	.schedule = pip_schedule,
 	/**
 	 * Ditto
 	 */
@@ -583,7 +583,7 @@ struct scheduler pcp_scheduler = {
 	.name = "Priority + PCP Protocol",
 	.acquire = pcp_acquire,
 	.release = pcp_release,
-	.schedule = pcp_schedule,
+	.schedule = pip_schedule,
 	/**
 	 * Ditto
 	 */
