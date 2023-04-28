@@ -540,7 +540,6 @@ static struct process* pcp_schedule(void)
 	struct process* pos = NULL;
 	struct process* tmp = NULL;
 
-	//dump_status();
 	if (!current || current->status == PROCESS_BLOCKED) {
 		goto pick_next;
 	}
@@ -551,7 +550,6 @@ pick_next:
 	if (!list_empty(&readyqueue)) {
 		next = list_first_entry(&readyqueue, struct process, list);
 		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
-			//pos->prio = (pos->prio == MAX_PRIO) ? pos->prio : (pos->prio + 1);
 			if (pos->prio > next->prio) {
 				next = pos;
 			}
@@ -569,7 +567,6 @@ pick_next:
 			}
 		}
 
-		//next->prio = next->prio_orig;
 		list_del_init(&next->list);
 
 	}
@@ -598,7 +595,6 @@ static bool pip_acquire(int resource_id)
 		return true;
 	}
 
-	//fprintf(stderr, "%d is approaching to %d\n", current->pid, resource_id);
 	if (r->owner->prio < current->prio) {
 		r->owner->prio = current->prio;
 	}
@@ -626,7 +622,6 @@ static void pip_release(int resource_id)
 			}
 		}
 		// We gotta change the OWNER of the resource!
-
 		assert(waiter->status == PROCESS_BLOCKED);
 		list_del_init(&waiter->list);
 		waiter->status = PROCESS_READY;
