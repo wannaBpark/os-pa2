@@ -366,8 +366,6 @@ static void prio_release(int resource_id)
 	struct process* waiter;
 
 	assert(r->owner == current);
-
-//	printf("%d is releasing %d away\n", current->pid, resource_id);
 	r->owner = NULL;
 	if (!list_empty(&r->waitqueue)) {
 		waiter = list_first_entry(&r->waitqueue, struct process, list);
@@ -402,6 +400,7 @@ pick_next:
 	if (!list_empty(&readyqueue)) {
 		next = list_first_entry(&readyqueue, struct process, list);
 		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
+			++pos->prio;
 			if (pos->prio > next->prio) {
 				next = pos;
 			}
@@ -416,8 +415,7 @@ pick_next:
 				list_add_tail(&current->list, &readyqueue);
 			}
 		}
-
-//RET:
+		next->prio = next->prio_orig;
 		list_del_init(&next->list);
 
 	}
@@ -439,6 +437,44 @@ struct scheduler prio_scheduler = {
 	/* Implement your own prio_schedule() and attach it here */
 };
 
+static struct process* pa_schedule(void)
+{
+	struct process* next = NULL;
+	struct process* pos = NULL;
+	struct process* tmp = NULL;
+
+	//dump_status();
+	if (!current || current->status == PROCESS_BLOCKED) {
+		goto pick_next;
+	}
+	if (list_empty(&readyqueue) && current->lifespan > current->age) {
+		return current;
+	}
+pick_next:
+	if (!list_empty(&readyqueue)) {
+		next = list_first_entry(&readyqueue, struct process, list);
+		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
+			if (pos->prio > next->prio) {
+				next = pos;
+			}
+		}
+
+		// We couldn't find more prioiry process T.T
+		if (!current || current->status == PROCESS_BLOCKED) {
+		}
+		else if (current->prio > next->prio && current->lifespan > current->age) { // no change
+			return current;
+		}
+		else if (current->prio == next->prio || current->prio < next->prio) { // changes but if life's left, add tail to the readyqueue
+			if (current->lifespan > current->age) {
+				list_add_tail(&current->list, &readyqueue);
+			}
+		}
+		list_del_init(&next->list);
+
+	}
+	return next;
+}
 /***********************************************************************
  * Priority scheduler with aging
  ***********************************************************************/
@@ -446,7 +482,7 @@ struct scheduler pa_scheduler = {
 	.name = "Priority + aging",
 	.acquire = prio_acquire,
 	.release = prio_release,
-	//.schedule = pa_schedule,
+	.schedule = pa_schedule,
 	/**
 	 * Ditto
 	 */
