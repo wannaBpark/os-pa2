@@ -400,7 +400,6 @@ pick_next:
 	if (!list_empty(&readyqueue)) {
 		next = list_first_entry(&readyqueue, struct process, list);
 		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
-			++pos->prio;
 			if (pos->prio > next->prio) {
 				next = pos;
 			}
@@ -410,14 +409,12 @@ pick_next:
 		if (!current || current->status == PROCESS_BLOCKED) {
 		} else if (current->prio > next->prio && current->lifespan > current->age) { // no change
 			return current;
-		} else if (current->prio == next->prio || current->prio < next->prio) { // changes but if life's left, add tail to the readyqueue
+		} else if (current->prio == next->prio) { // changes but if life's left, add tail to the readyqueue
 			if (current->lifespan > current->age) {
 				list_add_tail(&current->list, &readyqueue);
 			}
 		}
-		next->prio = next->prio_orig;
 		list_del_init(&next->list);
-
 	}
 	return next;
 }
