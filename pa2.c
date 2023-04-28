@@ -411,6 +411,10 @@ pick_next:
 			return current;
 		} else if (current->prio == next->prio) { // changes but if life's left, add tail to the readyqueue
 			if (current->lifespan > current->age) {
+				//list_add_tail(&current->list, &readyqueue);
+			}
+		} else if (current->prio < next->prio) {
+			if (current->lifespan > current->age) {
 				list_add_tail(&current->list, &readyqueue);
 			}
 		}
