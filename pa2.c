@@ -350,7 +350,7 @@ static bool prio_acquire(int resource_id)
 		return true;
 	}
 
-	fprintf(stderr, "%d is approaching to %d\n", current->pid, resource_id);
+	//fprintf(stderr, "%d is approaching to %d\n", current->pid, resource_id);
 	current->status = PROCESS_BLOCKED;
 
 	list_add_tail(&current->list, &r->waitqueue);
@@ -367,39 +367,21 @@ static void prio_release(int resource_id)
 
 	assert(r->owner == current);
 
-	printf("%d is releasing %d away\n", current->pid, resource_id);
-	//r->owner = NULL;
+//	printf("%d is releasing %d away\n", current->pid, resource_id);
+	r->owner = NULL;
 	if (!list_empty(&r->waitqueue)) {
 		waiter = list_first_entry(&r->waitqueue, struct process, list);
 		list_for_each_entry_safe(pos, tmp, &r->waitqueue, list) {
 			if (pos->prio > waiter->prio) {
 				waiter = pos;
-			} /*else if (pos->prio == waiter->prio&& pos->age < waiter->age) {
-				waiter = pos;
-			}*/
-			//printf("post_Tc : %ld cur_Tc : %ld\n", pos_tc, cur_tc);
+			} 
 		}
-		//no need to release!
-		//Current is already bigger than others.
-		/*if (current->prio > waiter->prio) {
-			return;
-		}*/
-
 		// We gotta change the OWNER of the resource!
 
-		r->owner = waiter;
 		assert(waiter->status == PROCESS_BLOCKED);
 		list_del_init(&waiter->list);
-		waiter->status = PROCESS_READY;
+		waiter->status = PROCESS_READY;		
 		list_add_tail(&waiter->list, &readyqueue);
-
-		printf("now %d has resource %d\n", waiter->pid, resource_id);
-
-
-		/*if (current->lifespan > current->age) {
-			current->status = PROCESS_READY;
-			list_add_tail(&current->list, &readyqueue);
-		}*/
 	}
 }
 
@@ -409,7 +391,7 @@ static struct process* prio_schedule(void)
 	struct process* pos = NULL;
 	struct process* tmp = NULL;
 
-	dump_status();
+	//dump_status();
 	if (!current || current->status == PROCESS_BLOCKED) {
 		goto pick_next;
 	}
@@ -418,37 +400,23 @@ static struct process* prio_schedule(void)
 	}
 pick_next:
 	if (!list_empty(&readyqueue)) {
-		//next = list_first_entry(&readyqueue, struct process, list);
-		//next = current;
 		next = list_first_entry(&readyqueue, struct process, list);
-		//next = list_first_entry(&readyqueue, structprocess, list) : current;
 		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
-			
 			if (pos->prio > next->prio) {
 				next = pos;
-			} /*else if (pos->prio == next->prio) {
-				next = pos;
-			}*/
+			}
 		}
 		
 		// We couldn't find more prioiry process T.T
-		if (!current) {
-			//list_del_init(&next->list);
-			//return next;
-		} else if (current->prio > next->prio && current->lifespan > current->age) {
+		if (!current || current->status == PROCESS_BLOCKED) {
+		} else if (current->prio > next->prio && current->lifespan > current->age) { // no change
 			return current;
-		} else if (current->prio == next->prio) {
+		} else if (current->prio == next->prio || current->prio < next->prio) { // changes but if life's left, add tail to the readyqueue
 			if (current->lifespan > current->age) {
 				list_add_tail(&current->list, &readyqueue);
 			}
 		}
 
-		// If we could found more priority process 
-		// code below...
-
-		/*if (current && current->lifespan > current->age && current != next) {
-			list_add_tail(&current->list, &readyqueue);
-		}*/
 //RET:
 		list_del_init(&next->list);
 
