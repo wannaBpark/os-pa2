@@ -349,6 +349,8 @@ static bool prio_acquire(int resource_id)
 		r->owner = current;
 		return true;
 	}
+
+	fprintf(stderr, "%d is approaching to %d\n", current->pid, resource_id);
 	current->status = PROCESS_BLOCKED;
 
 	list_add_tail(&current->list, &r->waitqueue);
@@ -365,7 +367,8 @@ static void prio_release(int resource_id)
 
 	assert(r->owner == current);
 
-	r->owner = NULL;
+	printf("%d is releasing %d away\n", current->pid, resource_id);
+	//r->owner = NULL;
 	if (!list_empty(&r->waitqueue)) {
 		waiter = list_first_entry(&r->waitqueue, struct process, list);
 		list_for_each_entry_safe(pos, tmp, &r->waitqueue, list) {
@@ -384,14 +387,18 @@ static void prio_release(int resource_id)
 
 		// We gotta change the OWNER of the resource!
 
-		//r->owner = NULL;
+		r->owner = waiter;
 		assert(waiter->status == PROCESS_BLOCKED);
 		list_del_init(&waiter->list);
 		waiter->status = PROCESS_READY;
 		list_add_tail(&waiter->list, &readyqueue);
 
+		printf("now %d has resource %d\n", waiter->pid, resource_id);
+
+
 		/*if (current->lifespan > current->age) {
-			list_add_tail(&current->list, &r->waitqueue);
+			current->status = PROCESS_READY;
+			list_add_tail(&current->list, &readyqueue);
 		}*/
 	}
 }
@@ -402,7 +409,7 @@ static struct process* prio_schedule(void)
 	struct process* pos = NULL;
 	struct process* tmp = NULL;
 
-	//dump_status();
+	dump_status();
 	if (!current || current->status == PROCESS_BLOCKED) {
 		goto pick_next;
 	}
@@ -454,7 +461,7 @@ pick_next:
  ***********************************************************************/
 struct scheduler prio_scheduler = {
 	.name = "Priority",
-	.acquire = fcfs_acquire,
+	.acquire = prio_acquire,
 	.release = prio_release,
 	.schedule = prio_schedule,
 	/**
