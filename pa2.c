@@ -205,16 +205,13 @@ static struct process *sjf_schedule(void)
 	struct process* pos = NULL;
 	struct process* tmp = NULL;
 	struct process* next = NULL;
-	size_t min_lifespan = 1e9;
 
-	/* You may inspect the situation by calling dump_status() at any time */
-	// dump_status();
-
+	// If there is no process OR current process is Blocked, pick next
 	if (!current || current->status == PROCESS_BLOCKED) {
 		goto pick_next;
 	}
 
-	/* The current process has remaining lifetime. Schedule it again */
+	// The current process has remaining lifetime. Run it til the end
 	if (current->age < current->lifespan) {
 		return current;
 	}
@@ -223,31 +220,23 @@ pick_next:
 	/* Let's pick a new process to run next */
 
 	if (!list_empty(&readyqueue)) {
-		/**
-		 * If the ready queue is not empty, pick the first process
-		 * in the ready queue
-		 */
+		next = list_first_entry(&readyqueue, struct process, list);
 		list_for_each_entry_safe(pos, tmp, &readyqueue, list) {
-			if (pos->lifespan < min_lifespan) {
+			// pick the shortest job (lifespan) and schedule it
+			if (pos->lifespan < next->lifespan) {
 				next = pos;
-				min_lifespan = next->lifespan;
 			}
 		}
-
 		list_del_init(&next->list);
 	}
-
-	/* Return the process to run next */
 	return next;
 }
 
 struct scheduler sjf_scheduler = {
 	.name = "Shortest-Job First",
-	.acquire = fcfs_acquire,	/* Use the default FCFS acquire() */
-	.release = fcfs_release,	/* Use the default FCFS release() */
-	.schedule = sjf_schedule,			/* TODO: Assign your schedule function
-								   to this function pointer to activate
-								   SJF in the simulation system */
+	.acquire = fcfs_acquire,	/* Using the default FCFS acquire() */
+	.release = fcfs_release,	/* Using the default FCFS release() */
+	.schedule = sjf_schedule,   // assign sjf_schedule
 };
 
 
@@ -277,11 +266,8 @@ pick_next:
 				next = pos;
 				cur_tc = pos_tc;
 			}
-		//	printf("post_Tc : %ld cur_Tc : %ld\n", pos_tc, cur_tc);
 		}
-		// no need to change : next == current
-		// left : couldn't find more shorter jobs (return current)
-		// right: current == null(adding new schedule) (return next)
+
 		if (next == NULL) { // Couldn't found shorter Time Completion
 			return current;
 		} else if (current && current->lifespan > current->age && next != NULL) {
@@ -338,7 +324,6 @@ struct scheduler rr_scheduler = {
 	.acquire = fcfs_acquire, /* Use the default FCFS acquire() */
 	.release = fcfs_release, /* Use the default FCFS release() */
 	.schedule = rr_schedule,
-	/* Obviously, ... */
 };
 
 static bool prio_acquire(int resource_id)
@@ -350,7 +335,6 @@ static bool prio_acquire(int resource_id)
 		return true;
 	}
 
-	//fprintf(stderr, "%d is approaching to %d\n", current->pid, resource_id);
 	current->status = PROCESS_BLOCKED;
 
 	list_add_tail(&current->list, &r->waitqueue);
@@ -374,8 +358,8 @@ static void prio_release(int resource_id)
 				waiter = pos;
 			} 
 		}
-		// We gotta change the OWNER of the resource!
 
+		// We gotta push WAITER -> READY QUEUE!
 		assert(waiter->status == PROCESS_BLOCKED);
 		list_del_init(&waiter->list);
 		waiter->status = PROCESS_READY;		
@@ -405,15 +389,11 @@ pick_next:
 			}
 		}
 		
-		// We couldn't find more prioiry process T.T
+		// code below : prevent segfault by accessing if and only (current) is valid
 		if (!current || current->status == PROCESS_BLOCKED) {
 		} else if (current->prio > next->prio && current->lifespan > current->age) { // no change
 			return current;
-		} else if (current->prio == next->prio) { // changes but if life's left, add tail to the readyqueue
-			if (current->lifespan > current->age) {
-				list_add_tail(&current->list, &readyqueue);
-			}
-		} else if (current->prio < next->prio) {
+		} else if (current->prio == next->prio || current->prio < next->prio) { // changes but if life's left, add tail to the readyqueue
 			if (current->lifespan > current->age) {
 				list_add_tail(&current->list, &readyqueue);
 			}
@@ -431,11 +411,6 @@ struct scheduler prio_scheduler = {
 	.acquire = prio_acquire,
 	.release = prio_release,
 	.schedule = prio_schedule,
-	/**
-	 * Implement your own acqure/release function to make the priority
-	 * scheduler correct.
-	 */
-	/* Implement your own prio_schedule() and attach it here */
 };
 
 static struct process* pa_schedule(void)
@@ -461,7 +436,7 @@ pick_next:
 			}
 		}
 
-		// We couldn't find more prioiry process T.T
+		// code below : prevent segfault by accessing if and only (current) is valid
 		if (!current || current->status == PROCESS_BLOCKED) {
 		}
 		else if (current->prio > next->prio && current->lifespan > current->age) { // no change
@@ -486,9 +461,6 @@ struct scheduler pa_scheduler = {
 	.acquire = prio_acquire,
 	.release = prio_release,
 	.schedule = pa_schedule,
-	/**
-	 * Ditto
-	 */
 };
 
 static bool pcp_acquire(int resource_id)
@@ -500,8 +472,6 @@ static bool pcp_acquire(int resource_id)
 		current->prio = MAX_PRIO;
 		return true;
 	}
-
-	//fprintf(stderr, "%d is approaching to %d\n", current->pid, resource_id);
 	current->status = PROCESS_BLOCKED;
 	list_add_tail(&current->list, &r->waitqueue);
 
@@ -525,8 +495,7 @@ static void pcp_release(int resource_id)
 				waiter = pos;
 			}
 		}
-		// We gotta change the OWNER of the resource!
-
+		// push WAITER -> READY QUEUE
 		assert(waiter->status == PROCESS_BLOCKED);
 		list_del_init(&waiter->list);
 		waiter->status = PROCESS_READY;
@@ -534,7 +503,7 @@ static void pcp_release(int resource_id)
 	}
 }
 
-static struct process* pcp_schedule(void)
+/*static struct process* pcp_schedule(void)
 {
 	struct process* next = NULL;
 	struct process* pos = NULL;
@@ -555,7 +524,7 @@ pick_next:
 			}
 		}
 
-		// We couldn't find more prioiry process T.T
+		// code below : prevent segfault by accessing if and only (current) is valid
 		if (!current || current->status == PROCESS_BLOCKED) {
 		}
 		else if (current->prio > next->prio && current->lifespan > current->age) { // no change
@@ -572,7 +541,7 @@ pick_next:
 	}
 	return next;
 
-}
+}*/
 /***********************************************************************
  * Priority scheduler with priority ceiling protocol
  ***********************************************************************/
@@ -621,13 +590,14 @@ static void pip_release(int resource_id)
 				waiter = pos;
 			}
 		}
-		// We gotta change the OWNER of the resource!
+		// push WAITER -> READY QUEUE
 		assert(waiter->status == PROCESS_BLOCKED);
 		list_del_init(&waiter->list);
 		waiter->status = PROCESS_READY;
 		list_add_tail(&waiter->list, &readyqueue);
 	}
 }
+/*
 static struct process* pip_schedule(void)
 {
 	struct process* next = NULL;
@@ -665,7 +635,7 @@ pick_next:
 	}
 	return next;
 
-}
+}*/
 /***********************************************************************
  * Priority scheduler with priority inheritance protocol
  ***********************************************************************/
