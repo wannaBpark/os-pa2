@@ -411,7 +411,7 @@ pick_next:
 			return current;
 		} else if (current->prio == next->prio) { // changes but if life's left, add tail to the readyqueue
 			if (current->lifespan > current->age) {
-				//list_add_tail(&current->list, &readyqueue);
+				list_add_tail(&current->list, &readyqueue);
 			}
 		} else if (current->prio < next->prio) {
 			if (current->lifespan > current->age) {
@@ -430,7 +430,7 @@ struct scheduler prio_scheduler = {
 	.name = "Priority",
 	.acquire = prio_acquire,
 	.release = prio_release,
-	.schedule = pip_schedule,
+	.schedule = prio_schedule,
 	/**
 	 * Implement your own acqure/release function to make the priority
 	 * scheduler correct.
@@ -485,7 +485,7 @@ struct scheduler pa_scheduler = {
 	.name = "Priority + aging",
 	.acquire = prio_acquire,
 	.release = prio_release,
-	.schedule = pip_schedule,
+	.schedule = pa_schedule,
 	/**
 	 * Ditto
 	 */
@@ -583,7 +583,7 @@ struct scheduler pcp_scheduler = {
 	.name = "Priority + PCP Protocol",
 	.acquire = pcp_acquire,
 	.release = pcp_release,
-	.schedule = pip_schedule,
+	.schedule = prio_schedule,
 	/**
 	 * Ditto
 	 */
@@ -678,7 +678,7 @@ struct scheduler pip_scheduler = {
 	.name = "Priority + PIP Protocol",
 	.acquire = pip_acquire,
 	.release = pip_release,
-	.schedule = pip_schedule,
+	.schedule = prio_schedule,
 	/**
 	 * Ditto
 	 */
